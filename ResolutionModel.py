@@ -80,64 +80,51 @@ class ResolutionModel:
     def parse(s: str) -> 'ResolutionModel':
         """
         Parse a string and return the corresponding ResolutionModel object.
-        
-        Expected format:
-            - Multiple clauses separated by whitespace, '&', or '∧'
+
+        Accepts formats like:
+            - "{C, D}, {A, ~B}"
+            - "{A, B} & {~B, C}"
+            - "(A B) ∧ (~B C)"
+            - "{{A, B}, {C, D}}"
             - Each clause should be in the format accepted by Clause.parse()
-            - Supports nested delimiters: {{A, B}, {C, D}} or ((A B) (C D))
-            - Example: "{A, B} & {~B, C}" or "(A B) ∧ (~B C)" or "{{A, B}, {C, D}}"
-        
+
         Args:
             s: String to parse
-            
+
         Returns:
             A ResolutionModel object containing the parsed clauses
-            
+
         Raises:
             ValueError: If the string is not in the correct format or contains invalid clauses
             TypeError: If the input is not a string
         """
         if not isinstance(s, str):
             raise TypeError(f"parse() requires a string, got: {type(s).__name__}")
-        
+
         cleaned = s.strip()
         if not cleaned:
             raise ValueError("parse() requires a non-empty string")
-        
-        # Check if the entire string is wrapped in outer delimiters
-        # If so, remove them first
-        if (cleaned.startswith('{') and cleaned.endswith('}')) or \
-           (cleaned.startswith('(') and cleaned.endswith(')')) or \
-           (cleaned.startswith('[') and cleaned.endswith(']')):
-            # Check if these are matching outer delimiters
-            outer_open = cleaned[0]
-            outer_close = cleaned[-1]
-            
-            # Define matching pairs
-            matching = {'{': '}', '(': ')', '[': ']'}
-            
-            if outer_open in matching and matching[outer_open] == outer_close:
-                # Remove outer delimiters and check if they're truly outer
-                inner = cleaned[1:-1].strip()
-                
-                # Verify these are actual outer delimiters by checking bracket balance
-                if is_balanced_and_outer(cleaned):
-                    cleaned = inner
-        
-        if not cleaned.strip():
-            raise ValueError("parse() requires a non-empty string after removing delimiters")
-        
-        # Split by &, ∧, or whitespace
-        # First replace & and ∧ with a common delimiter
-        cleaned = cleaned.replace('&', ' ').replace('∧', ' ')
-        
-        # Split by whitespace while respecting nested delimiters
-        clause_strings = smart_split(cleaned)
-        
+
+        import re
+        # Try to find all substrings that look like { ... }
+        clause_strings = re.findall(r'\{[^}]*\}', cleaned)
+
+        if not clause_strings:
+            # Try to find all substrings that look like ( ... )
+            clause_strings = re.findall(r'\([^)]*\)', cleaned)
+
+        if not clause_strings:
+            # Try to find all substrings that look like [ ... ]
+            clause_strings = re.findall(r'\[[^\]]*\]', cleaned)    
+
+        if not clause_strings:
+            # If no {...}, [ ... ], or (...) found, fall back to previous splitting logic
+            cleaned = cleaned.replace('&', ' ').replace('∧', ' ')
+            clause_strings = cleaned.split()
+
         if not clause_strings:
             raise ValueError("parse() resulted in no valid clauses")
-        
-        # Parse each clause
+
         clauses = []
         for clause_str in clause_strings:
             clause_str = clause_str.strip()
@@ -148,80 +135,8 @@ class ResolutionModel:
                 clauses.append(clause)
             except ValueError as e:
                 raise ValueError(f"Invalid clause in model: {e}")
-        
+
         if not clauses:
             raise ValueError("parse() resulted in no valid clauses")
-        
+
         return ResolutionModel(clauses)
-
-
-def is_balanced_and_outer(s: str) -> bool:
-    """
-    Check if the outer delimiters are truly outer (balanced at the outermost level).
-    
-    Args:
-        s: String with potential delimiters
-        
-    Returns:
-        True if outer delimiters are balanced at the top level
-    """
-    if len(s) < 2:
-        return False
-    
-    matching = {'{': '}', '(': ')', '[': ']'}
-    open_char = s[0]
-    close_char = s[-1]
-    
-    if open_char not in matching or matching[open_char] != close_char:
-        return False
-    
-    # Check if the closing delimiter matches at the correct depth
-    depth = 0
-    for i, char in enumerate(s):
-        if char in matching:
-            depth += 1
-        elif char in matching.values():
-            depth -= 1
-        
-        # If depth reaches 0 before the end, outer delimiters don't match
-        if depth == 0 and i < len(s) - 1:
-            return False
-    
-    return depth == 0
-
-
-def smart_split(s: str) -> list:
-    """
-    Split a string by whitespace while respecting nested delimiters.
-    
-    Args:
-        s: String to split
-        
-    Returns:
-        List of clause strings
-    """
-    matching = {'{': '}', '(': ')', '[': ']'}
-    reverse_matching = {v: k for k, v in matching.items()}
-    
-    clauses = []
-    current = []
-    depth = 0
-    
-    for char in s:
-        if char in matching:
-            depth += 1
-            current.append(char)
-        elif char in reverse_matching:
-            depth -= 1
-            current.append(char)
-        elif char.isspace() and depth == 0:
-            if current:
-                clauses.append(''.join(current))
-                current = []
-        else:
-            current.append(char)
-    
-    if current:
-        clauses.append(''.join(current))
-    
-    return clauses

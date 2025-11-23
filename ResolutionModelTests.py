@@ -215,6 +215,7 @@ class TestClauseParse(unittest.TestCase):
         clause = Clause.Clause.parse("(A B C)")
         literals = clause.get_literals()
         self.assertEqual(len(literals), 3)
+
     
     def test_parse_with_brackets(self):
         """Test parsing with brackets"""
@@ -439,6 +440,14 @@ class TestResolutionModelParse(unittest.TestCase):
         clauses = model.get_clauses()
         
         self.assertEqual(len(clauses), 2)
+
+    def test_parse_with_commas(self):
+        """Test parsing with parentheses"""
+        model = ResolutionModel.ResolutionModel.parse("{A, B, C}, {D, E}")
+        clauses = model.get_clauses()
+        self.assertEqual(len(clauses), 2)
+        self.assertEqual(len(clauses[0].get_literals()), 3)
+        self.assertEqual(len(clauses[1].get_literals()), 2)
     
     def test_parse_ampersand_separated_clauses(self):
         """Test parsing clauses separated by & (ampersand)"""
