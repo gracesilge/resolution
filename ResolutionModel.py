@@ -6,7 +6,7 @@ class ResolutionModel:
     
     def __init__(self, clauses: list):
         """
-        Initialize a ResolutionModel with a list of Clauses.
+        Initialize a ResolutionModel with a list of unique Clauses.
         
         Args:
             clauses: List of Clause objects (must not be empty)
@@ -24,7 +24,14 @@ class ResolutionModel:
         if not all(isinstance(c, Clause) for c in clauses):
             raise TypeError("all items in clauses list must be Clause objects")
         
-        self.__clauses = clauses
+        # Ensure uniqueness while preserving order
+        seen = set()
+        unique_clauses = []
+        for c in clauses:
+            if c not in seen:
+                unique_clauses.append(c)
+                seen.add(c)
+        self.__clauses = unique_clauses
     
     def get_clauses(self) -> list:
         """Return a copy of the list of clauses in this resolution model"""
@@ -73,9 +80,93 @@ class ResolutionModel:
         
         clause1 = self.__clauses[index1]
         clause2 = self.__clauses[index2]
-        
-        self.__clauses.append(Clause.resolve(clause1, clause2, literal))
+        new_clause = Clause.resolve(clause1, clause2, literal)
+        if new_clause not in self.__clauses:
+            self.__clauses.append(new_clause)
     
+    def numResolveLiterals(self, index1: int, index2: int) -> int:
+        """
+        Return the number of literal-negation pairs between the clauses at index1 and index2.
+        Raises IndexError for invalid indices.
+        """
+        if index1 < 0 or index1 >= len(self.__clauses):
+            raise IndexError(f"index1 {index1} is out of range for clauses list of length {len(self.__clauses)}")
+        if index2 < 0 or index2 >= len(self.__clauses):
+            raise IndexError(f"index2 {index2} is out of range for clauses list of length {len(self.__clauses)}")
+
+        clause1 = self.__clauses[index1]
+        clause2 = self.__clauses[index2]
+        literals1 = clause1.get_literals()
+        literals2 = clause2.get_literals()
+
+        # Find all literal-negation pairs
+        pairs = 0
+        for lit1 in literals1:
+            for lit2 in literals2:
+                if lit1.letter == lit2.letter and lit1.is_negated != lit2.is_negated:
+                    pairs += 1
+        return pairs
+
+    def getEasyLiteral(self, index1: int, index2: int) -> Literal:
+        """
+        Returns a literal from clause at index1 that has its negation in clause at index2,
+        or vice versa. Raises IndexError for invalid indices. Returns the first such literal found.
+        Raises ValueError if no such literal exists.
+        """
+        if index1 < 0 or index1 >= len(self.__clauses):
+            raise IndexError(f"index1 {index1} is out of range for clauses list of length {len(self.__clauses)}")
+        if index2 < 0 or index2 >= len(self.__clauses):
+            raise IndexError(f"index2 {index2} is out of range for clauses list of length {len(self.__clauses)}")
+
+        clause1 = self.__clauses[index1]
+        clause2 = self.__clauses[index2]
+        literals1 = clause1.get_literals()
+        literals2 = clause2.get_literals()
+
+        for lit1 in literals1:
+            for lit2 in literals2:
+                if lit1.letter == lit2.letter and lit1.is_negated != lit2.is_negated:
+                    return lit1
+        for lit2 in literals2:
+            for lit1 in literals1:
+                if lit2.letter == lit1.letter and lit2.is_negated != lit1.is_negated:
+                    return lit2
+        raise ValueError("No literal-negation pair found between the two clauses.")
+
+    def get_literal_negation_pairs(self, index1: int, index2: int) -> list:
+        """
+        Returns a list of non-negated literals from clause at index1 or index2
+        that have their negation in the other clause. Raises IndexError for invalid indices.
+        """
+        if index1 < 0 or index1 >= len(self.__clauses):
+            raise IndexError(f"index1 {index1} is out of range for clauses list of length {len(self.__clauses)}")
+        if index2 < 0 or index2 >= len(self.__clauses):
+            raise IndexError(f"index2 {index2} is out of range for clauses list of length {len(self.__clauses)}")
+
+        clause1 = self.__clauses[index1]
+        clause2 = self.__clauses[index2]
+        literals1 = clause1.get_literals()
+        literals2 = clause2.get_literals()
+
+        pairs = []
+        # Only add the non-negated literal for each pair
+        for lit1 in literals1:
+            for lit2 in literals2:
+                if lit1.letter == lit2.letter and lit1.is_negated != lit2.is_negated:
+                    if not lit1.is_negated:
+                        pairs.append(lit1)
+                    elif not lit2.is_negated:
+                        pairs.append(lit2)
+        # Remove duplicates (by letter)
+        unique_pairs = []
+        seen = set()
+        for lit in pairs:
+            key = lit.letter
+            if key not in seen:
+                unique_pairs.append(lit)
+                seen.add(key)
+        return unique_pairs
+
     @staticmethod
     def parse(s: str) -> 'ResolutionModel':
         """
@@ -132,7 +223,8 @@ class ResolutionModel:
                 continue
             try:
                 clause = Clause.parse(clause_str)
-                clauses.append(clause)
+                if clause not in clauses:
+                    clauses.append(clause)
             except ValueError as e:
                 raise ValueError(f"Invalid clause in model: {e}")
 
