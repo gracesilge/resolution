@@ -3,17 +3,24 @@ from Literal import Literal
 class Clause:
         """Inner class representing a Clause (a set of Literals)"""
         
-        def __init__(self, literals: set = None):
+        def __init__(self, literals: set = None, leftParent = None, rightParent = None):
             """
             Initialize a Clause with a set of Literals.
             
             Args:
                 literals: Set of Literal objects (defaults to empty set)
+                leftParent: Optional Clause representing the left parent in a resolution
+                rightParent: Optional Clause representing the right parent in a resolution
             """
             self.__literals = literals if literals is not None else set()
+            self.__leftParent = leftParent
+            self.__rightParent = rightParent
     
     
-        
+        def get_parents(self) -> tuple:
+            """Return a tuple of the left and right parent Clauses (or None if not applicable)"""
+            return (self.__leftParent, self.__rightParent)
+
         def get_literals(self) -> set:
             """Get the set of literals in this clause"""
             return self.__literals.copy()
@@ -97,7 +104,7 @@ class Clause:
                     if lit.letter != literal.letter or lit in literals2:
                         resolvent_literals.add(lit)
             
-            return Clause(resolvent_literals)
+            return Clause(resolvent_literals, clause1, clause2)
         
         @staticmethod
         def parse(s: str) -> 'Clause':

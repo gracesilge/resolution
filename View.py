@@ -74,7 +74,7 @@ if st.session_state.current_state == 2:
         def click_button(index: int):
             if st.session_state.has_clause:
                 if (st.session_state.model.numResolveLiterals(st.session_state.first_clause, index) == 0):
-                    st.error("These clauses cannot be resolved on any literal-negation pair.")
+                    st.warning("These clauses cannot be resolved on any literal-negation pair.")
                     st.session_state.first_clause = None
                     st.session_state.has_clause = False
                     return
@@ -144,6 +144,9 @@ if st.session_state.current_state == 3:
 
 if st.session_state.current_state == 4:
     st.write("Contradiction found, proof complete!")
+    st.write("Proof of resolution steps:")
+    proof = st.session_state.model.get_proof()
+    st.text(proof)
     reset = st.button("Reset")
     if reset:
         st.session_state.current_state = 1

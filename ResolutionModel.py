@@ -1,5 +1,6 @@
 from Literal import Literal
 from Clause import Clause
+from functools import reduce
 
 class ResolutionModel:
     """Represents a full CNF resolution model consisting of multiple clauses."""
@@ -133,6 +134,49 @@ class ResolutionModel:
                     return lit2
         raise ValueError("No literal-negation pair found between the two clauses.")
 
+    def get_proof(self) -> str:
+        """
+        Generate a proof of resolution steps leading to the empty clause, if it exists.
+        
+        Returns:
+            A string representation of the proof steps, or a message indicating no proof exists.
+
+        Raises:
+            ValueError: If no empty clause exists in the model
+        """
+        empty_clause = None
+        for clause in self.__clauses:
+            if len(clause.get_literals()) == 0:
+                empty_clause = clause
+                break
+        
+        if empty_clause is None:
+            raise ValueError("No empty clause exists in the model; cannot generate proof.")
+        
+        proof_list = []
+        seen = set()
+        def backtrack(clause: Clause):
+            if clause is None:
+                return
+            left, right = clause.get_parents()
+            backtrack(left)
+            backtrack(right)
+            if clause not in seen:
+                proof_list.append(clause)
+                seen.add(clause)
+        backtrack(empty_clause)
+        all_input_clause_at_front = []
+        for clause in proof_list:
+            if clause.get_parents() == (None, None):
+                all_input_clause_at_front.append(clause)
+        for clause in proof_list:
+            if clause.get_parents() != (None, None):
+                all_input_clause_at_front.append(clause)
+        proof_str = ""
+        for i in range(len(all_input_clause_at_front)):
+            end_str = "Input clause" if all_input_clause_at_front[i].get_parents() == (None, None) else (str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[0])) + "," + str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[1])) + " Resolution")
+            proof_str += f"{i+1:<5} {str(all_input_clause_at_front[i]):<20} {end_str:>20}\n"
+        return proof_str
     def get_literal_negation_pairs(self, index1: int, index2: int) -> list:
         """
         Returns a list of non-negated literals from clause at index1 or index2
