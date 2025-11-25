@@ -174,7 +174,7 @@ class ResolutionModel:
                 all_input_clause_at_front.append(clause)
         proof_str = ""
         for i in range(len(all_input_clause_at_front)):
-            end_str = "Input clause" if all_input_clause_at_front[i].get_parents() == (None, None) else (str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[0])) + "," + str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[1])) + " Resolution")
+            end_str = "Input clause" if all_input_clause_at_front[i].get_parents() == (None, None) else (str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[0]) + 1) + "," + str(all_input_clause_at_front.index(all_input_clause_at_front[i].get_parents()[1]) + 1) + " Resolution")
             proof_str += f"{i+1:<5} {str(all_input_clause_at_front[i]):<20} {end_str:>20}\n"
         return proof_str
     def get_literal_negation_pairs(self, index1: int, index2: int) -> list:
