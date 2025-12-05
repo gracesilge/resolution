@@ -1,4 +1,4 @@
-# Resolution
+# Resolution (Beta)
 Allows students to visually explore how resolution proofs in logic work
 
 [Deployed app](https://resolution.streamlit.app/)
@@ -16,3 +16,7 @@ To prove that (A v B) & (A v ~B) & (~A v B) & (~A v ~B) is a contradiction, begi
 6     {~B}                       3,4 Resolution
 7     {}                         5,6 Resolution
 ```
+
+## Problems
+
+Thank you for being a beta tester! If you find any problems or want to suggest features, please [file an issue here](https://github.com/gracesilge/resolution/issues) or [send me an email](mailto:silge.g@northeastern.edu)!
